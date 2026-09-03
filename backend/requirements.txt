@@ -1,0 +1,17 @@
+# OMNIVISTA AI backend
+fastapi==0.141.1
+uvicorn[standard]==0.35.0
+python-multipart==0.0.20
+pydantic==2.13.4
+pydantic-settings==2.10.1
+pypdf==6.16.2
+pdfplumber==0.11.10
+python-docx==1.2.0
+python-pptx==1.0.2
+reportlab==5.0.1
+matplotlib==3.10.9
+numpy==2.3.5
+pillow==12.3.0
+httpx==0.28.1
+pytest==9.0.3
+pytest-asyncio==1.1.0

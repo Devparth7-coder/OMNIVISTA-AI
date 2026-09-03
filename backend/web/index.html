@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OMNIVISTA AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#11151d; --panel2:#0e1219; --border:#1e2633; --border2:#273244;
+    --text:#e6e9ef; --muted:#8b94a6; --accent:#6d8bff; --accent2:#8b5cf6; --ok:#34d399;
+    --warn:#fbbf24; --bad:#f87171; --radius:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+  a{color:var(--accent);text-decoration:none}
+  /* top nav */
+  header{height:54px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;
+    align-items:center;gap:18px;padding:0 20px;flex:0 0 auto;z-index:10}
+  .logo{font-weight:800;letter-spacing:.5px;font-size:15px;display:flex;align-items:center;gap:9px}
+  .logo .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900}
+  nav{display:flex;gap:4px;margin-left:8px}
+  nav a{padding:7px 12px;border-radius:8px;color:var(--muted);font-size:13px;font-weight:600}
+  nav a.active,nav a:hover{color:var(--text);background:var(--panel2)}
+  .spacer{flex:1}
+  .pill{font-size:11px;color:var(--muted);border:1px solid var(--border);padding:5px 10px;border-radius:20px}
+  .pill.green{border-color:#1f3a33;color:var(--ok)}
+  /* layout */
+  .app{display:flex;flex:1;min-height:0}
+  /* left rail */
+  .rail{width:250px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;flex:0 0 auto}
+  .rail-head{padding:14px 16px;height:50px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);font-weight:700;font-size:13px}
+  .doc-list{overflow:auto;padding:10px}
+  .doc{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+  .doc:hover{border-color:var(--border2)}
+  .doc.active{border-color:var(--accent)}
+  .doc .nm{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .doc .meta{font-size:11px;color:var(--muted);margin-top:4px;display:flex;gap:8px;flex-wrap:wrap}
+  .status{font-size:10px;padding:2px 7px;border-radius:20px;background:#232a38;color:var(--muted)}
+  .status.READY{background:#123029;color:var(--ok)}
+  .status.FAILED{background:#3a1b1b;color:var(--bad)}
+  .status.PARSING,.status.OCR,.status.ANALYZING,.status.CHUNKING,.status.EMBEDDING,.status.INDEXING{background:#33301a;color:var(--warn)}
+  .rail-foot{padding:12px;border-top:1px solid var(--border)}
+  .btn{background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-weight:700;
+    padding:10px 14px;border-radius:9px;width:100%;cursor:pointer;font-size:13px}
+  .btn:hover{filter:brightness(1.08)}
+  .btn.ghost{background:#1c2430;color:var(--text);border:1px solid var(--border2)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  /* workspace split */
+  .workspace{display:flex;flex:1;min-width:0}
+  .viewer{flex:1.35;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)}
+  .viewer-head{height:42px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;padding:0 14px}
+  .viewer-head .title{font-weight:600;font-size:13px}
+  .viewer-head .pg{color:var(--muted);font-size:12px}
+  .pdf-scroll{flex:1;overflow:auto;background:#0a0c10;padding:22px;display:flex;justify-content:center}
+  .pdf-page{position:relative;box-shadow:0 6px 30px rgba(0,0,0,.55);background:#fff;display:none}
+  .hl{position:absolute;border:2px solid var(--accent);background:rgba(109,139,255,.18);border-radius:3px;z-index:5}
+  .hl.diagram{border-color:var(--accent2);background:rgba(139,92,246,.20)}
+  .hl.chart{border-color:#34d399;background:rgba(52,211,153,.18)}
+  .hl.table{border-color:var(--warn);background:rgba(251,191,36,.18)}
+  .placeholder{color:var(--muted);font-size:13px}
+  /* chat */
+  .chat{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--panel2)}
+  .chat-head{height:42px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 14px;gap:10px;font-weight:700;font-size:13px}
+  .chat-body{flex:1;overflow:auto;padding:18px 18px 6px}
+  .msg{margin-bottom:16px;max-width:100%}
+  .msg .role{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;letter-spacing:.3px}
+  .msg.user .role{color:var(--accent)}
+  .msg .bubble{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+  .msg.user .bubble{background:#1b2740;border-color:#2a3d61}
+  .cites{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+  .cite{font-size:11px;background:#1c2430;border:1px solid var(--border2);color:#c3d1ff;padding:4px 9px;border-radius:20px;cursor:pointer}
+  .cite:hover{border-color:var(--accent)}
+  .ev{font-size:10.5px;margin-top:8px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .ev .g{color:var(--ok)}
+  .composer{flex:0 0 auto;padding:12px;border-top:1px solid var(--border);background:var(--panel)}
+  .composer textarea{width:100%;background:var(--panel2);border:1px solid var(--border);border-radius:10px;color:var(--text);
+    padding:11px 12px;font-size:13.5px;resize:none;min-height:52px;outline:none}
+  .composer textarea:focus{border-color:var(--accent)}
+  .composer-bar{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .composer-bar .hint{font-size:11px;color:var(--muted);flex:1}
+  .send{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;font-weight:700;padding:9px 16px;border-radius:9px;cursor:pointer;font-size:13px}
+  .send:disabled{opacity:.5}
+  .inline{margin:8px 0}
+  .cap{font-size:11px;color:var(--muted);text-align:center;margin-top:6px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#1c2430;border:1px solid var(--border2);
+    padding:10px 16px;border-radius:10px;font-size:13px;opacity:0;transition:opacity .3s;z-index:50}
+  .toast.show{opacity:1}
+  .sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .sugg button{background:#1c2430;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:5px 9px;border-radius:16px;cursor:pointer}
+  .sugg button:hover{color:var(--text);border-color:var(--accent)}
+  @media(max-width:900px){.app{flex-direction:column}.rail{width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:220px}.workspace{flex-direction:column}.viewer{border-right:none;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot">◆</span> OMNIVISTA <span style="font-weight:500;color:var(--muted)">AI</span></div>
+  <nav>
+    <a class="active" href="#documents">Documents</a>
+    <a href="#chat">Chat</a>
+    <a href="#analytics">Analytics</a>
+  </nav>
+  <div class="spacer"></div>
+  <span class="pill">MOCK MODE</span>
+  <span id="mode-pill" class="pill green">● online</span>
+</header>
+
+<div class="app">
+  <!-- left rail -->
+  <div class="rail">
+    <div class="rail-head">＋ Library</div>
+    <div class="doc-list" id="docList">
+      <div class="placeholder" style="padding:6px 4px">No documents yet.</div>
+    </div>
+    <div class="rail-foot">
+      <button id="uploadBtn" class="btn">Upload file</button>
+      <input id="fileInput" type="file" accept=".pdf,.txt,.md,.docx,.pptx,.png,.jpg" style="display:none" />
+      <div style="height:8px"></div>
+      <button id="seedBtn" class="btn ghost" style="background:#1a2a3a;color:#7fb3ff">Generate demo PDF</button>
+      <div class="cap" id="statusLine"></div>
+    </div>
+  </div>
+
+  <!-- workspace -->
+  <div class="workspace">
+    <!-- viewer -->
+    <div class="viewer">
+      <div class="viewer-head">
+        <span class="title" id="viewerTitle">No document selected</span>
+        <div class="spacer"></div>
+        <span class="pg" id="viewerPage"></span>
+        <button id="prevPg" class="btn ghost" style="width:auto;padding:5px 10px;font-size:12px">‹</button>
+        <button id="nextPg" class="btn ghost" style="width:auto;padding:5px 10px;font-size:12px">›</button>
+      </div>
+      <div class="pdf-scroll" id="pdfScroll">
+        <div class="placeholder" id="viewerPlaceholder">Upload or generate a document to open the viewer.<br><br>The viewer highlights the exact page &amp; region behind every citation.</div>
+        <div id="pageWrap" style="position:relative;display:none">
+          <canvas id="pdfCanvas"></canvas>
+        </div>
+        <div id="pdfExtra" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- chat -->
+    <div class="chat">
+      <div class="chat-head">AI Chat <span class="hairline" style="flex:1"></span><span id="modeLabel" style="color:var(--muted);font-size:12px">multimodal RAG</span></div>
+      <div class="chat-body" id="chatBody">
+        <div class="msg assistant">
+          <div class="role">OMNIVISTA ASSISTANT</div>
+          <div class="bubble">Hi — this is a grounded document-intelligence assistant. Ask about text, tables, charts or diagrams,
+            and it will answer only from the uploaded evidence with precise page citations.</div>
+          <div class="sugg">
+            <button onclick="ask('What does the architecture diagram show?')">What does the architecture diagram show?</button>
+            <button onclick="ask('Which year had the highest revenue?')">Which year had the highest revenue?</button>
+            <button onclick="ask('What component connects the client to the backend?')">Which component connects client→backend?</button>
+            <button onclick="ask('Does the text match the diagram?')">Does the text match the diagram?</button>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <textarea id="input" placeholder="Ask a question about the document…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();ask()}"></textarea>
+        <div class="composer-bar">
+          <div class="hint" id="hint">Answers are grounded in uploaded evidence · citations open the source</div>
+          <button class="send" id="sendBtn" onclick="ask()">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const API = ''; // same-origin (FastAPI serves this client + /api)
+let docs=[], currentDoc=null, pageNum=1, pdfDoc=null, hl=[];
+let chat=[];
+
+async function api(path, opts){const r=await fetch(API+'/api'+path,opts);if(!r.ok)throw new Error(await r.text());return r.json();}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+
+async function refreshDocs(){
+  docs=await api('/documents');
+  const list=document.getElementById('docList');
+  list.innerHTML='';
+  if(!docs.length){list.innerHTML='<div class="placeholder" style="padding:6px 4px">No documents yet.</div>';return;}
+  docs.forEach(d=>{
+    const el=document.createElement('div');el.className='doc'+(currentDoc&&currentDoc.document_id===d.document_id?' active':'');
+    const state=d.status;
+    el.innerHTML='<div class="nm">'+escapeHtml(d.name)+'</div><div class="meta"><span class="status '+state+'">'+state+
+      '</span><span>'+d.pages+'p</span><span>'+d.chunks+' chunks</span><span>'+d.image_count+' img · '+d.table_count+' tbl</span></div>';
+    el.onclick=()=>openDoc(d.document_id);
+    list.appendChild(el);
+  });
+}
+
+async function openDoc(id){
+  const d=await api('/documents/'+id);
+  currentDoc=d;refreshDocs();
+  document.getElementById('viewerTitle').textContent=d.name;
+  document.getElementById('viewerPlaceholder').style.display='none';
+  renderPdfPane(d);
+  if(d.status!=='READY'){pollStatus(id);}
+}
+
+async function renderPdfPane(d){
+  // For simplicity, load the PDF bytes (works for pdf; others fallback).
+  const resp=await fetch(API+'/api/documents/'+d.document_id+'/pages/1',{headers:{'Accept':'application/pdf'}});
+  if(!resp.ok){document.getElementById('pdfExtra').innerHTML='<div class="placeholder">Could not render viewer for this type.</div>';document.getElementById('pdfExtra').style.display='block';return;}
+  const buf=await resp.arrayBuffer();
+  pdfDoc=await pdfjsLib.getDocument({data:buf}).promise;
+  renderPage(pageNum);
+}
+
+function renderPage(n){
+  if(!pdfDoc||n<1||n>pdfDoc.numPages)return;
+  document.getElementById('pageWrap').style.display='block';
+  document.getElementById('viewerPlaceholder').style.display='none';
+  pdfDoc.getPage(n).then(page=>{
+    const canvas=document.getElementById('pdfCanvas');
+    const ctx=canvas.getContext('2d');
+    const vw=Math.min(760,document.getElementById('pdfScroll').clientWidth-40);
+    const scale=vw/page.getViewport({scale:1}).width;
+    const vp=page.getViewport({scale});
+    canvas.width=vp.width;canvas.height=vp.height;
+    canvas.style.width=vp.width+'px';canvas.style.height=vp.height+'px';
+    page.render({canvasContext:ctx,viewport:vp}).promise.then(()=>{
+      drawHighlights(n);
+      document.getElementById('viewerPage').textContent=n+' / '+pdfDoc.numPages;
+      pageNum=n;
+    });
+  });
+}
+
+function drawHighlights(n){
+  document.querySelectorAll('#pageWrap .hl').forEach(e=>e.remove());
+  const wrap=document.getElementById('pageWrap');
+  const canvas=document.getElementById('pdfCanvas');
+  const s = canvas.width / 612; // PDF default page width in points (approx mapping)
+  hls().filter(c=>c.page===n).forEach(c=>{
+    if(!c.bbox)return;
+    const b=c.bbox;
+    const x1=b[0]*s, y1=b[1]*s, x2=b[2]*s, y2=b[3]*s;
+    const el=document.createElement('div');el.className='hl '+(c.type||'text');
+    el.style.left=(x1)+'px';el.style.top=(y1)+'px';el.style.width=(x2-x1)+'px';el.style.height=(y2-y1)+'px';
+    el.title=(c.type||'source')+' — Page '+c.page;
+    wrap.appendChild(el);
+    el.scrollIntoView({block:'center',behavior:'smooth'});
+  });
+}
+
+let highlightData=[];
+function hls(){return highlightData;}
+
+function focusCitation(cit){
+  if(!cit)return;
+  if(!currentDoc)return;
+  const d=currentDoc;
+  // store highlight for this page
+  highlightData=[{page:cit.page,bbox:cit.bbox,type:(cit.content_type||'text')}];
+  renderPage(cit.page);
+  toast('Focusing: '+cit.document_name+' p.'+cit.page+' ('+(cit.content_type||'area')+')');
+  if(cit.image_ids&&cit.image_ids.length){/* note image */ }
+}
+
+function addMsg(role,text,cites,ev){
+  const body=document.getElementById('chatBody');
+  const el=document.createElement('div');el.className='msg '+role;
+  let html='<div class="role">'+(role==='user'?'YOU':'OMNIVISTA ASSISTANT')+'</div><div class="bubble">'+text+'</div>';
+  if(cites&&cites.length){
+    html+='<div class="cites">'+cites.map(c=>{
+      const lbl=c.content_type==='diagram'?'Diagram':c.content_type==='chart'?'Chart':c.content_type==='table'?'Table':'Page';
+      return '<button class="cite" data-page="'+c.page+'" data-idx="'+cites.indexOf(c)+'">'+lbl+' '+c.page+'</button>';
+    }).join('')+'</div>';
+  }
+  if(ev){html+='<div class="ev"><span class="g">●</span>grounded '+(ev.grounded?'yes':'no')+' · confidence '+(ev.confidence*100|0)+'%</div>';}
+  el.innerHTML=html;
+  body.appendChild(el);
+  body.scrollTop=body.scrollHeight;
+  el.querySelectorAll('.cite').forEach(b=>b.addEventListener('click',()=>focusCitation(cites[+b.dataset.idx])));
+}
+
+async function ask(text){
+  const inp=document.getElementById('input');
+  const q=(text||inp.value).trim();
+  if(!q)return;
+  inp.value='';
+  addMsg('user',q,null,null);
+  const sendBtn=document.getElementById('sendBtn');sendBtn.disabled=true;
+  try{
+    const ids=currentDoc?[currentDoc.document_id]:docs.map(d=>d.document_id);
+    const res=await api('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q,document_ids:ids})});
+    addMsg('assistant',res.answer,res.citations,res.evidence);
+    // auto-focus first citation highlight after a tick
+    setTimeout(()=>{if(res.citations&&res.citations[0])focusCitation(res.citations[0]);},200);
+  }catch(e){addMsg('assistant','Error: '+e.message);}
+  sendBtn.disabled=false;
+}
+
+async function upload(file){
+  if(!file)return;
+  const fd=new FormData();fd.append('file',file);
+  toast('Uploading '+file.name);
+  const r=await fetch(API+'/api/documents',{method:'POST',body:fd});
+  if(!r.ok){toast('Upload failed: '+await r.text());return;}
+  const d=await r.json();
+  toast('Uploaded — processing…');
+  await refreshDocs();pollStatus(d.document_id);
+}
+
+async function pollStatus(id){
+  for(let i=0;i<60;i++){
+    await new Promise(r=>setTimeout(r,1200));
+    const s=await api('/documents/'+id+'/status');
+    document.getElementById('statusLine').textContent=s.status+(s.stage_detail?' · '+s.stage_detail:'');
+    await refreshDocs();
+    if(s.status==='READY'){toast('Document ready');document.getElementById('statusLine').textContent='Ready — '+s.pages+' pages, '+s.chunks+' chunks';return;}
+    if(s.status==='FAILED'){toast('Processing failed: '+s.error);return;}
+  }
+}
+
+async function seed(){
+  toast('Generating demo PDF…');
+  const d=await api('/demo/seed?kind=pdf',{method:'POST'});
+  await refreshDocs();pollStatus(d.document_id);
+}
+
+function escapeHtml(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+document.getElementById('uploadBtn').onclick=()=>document.getElementById('fileInput').click();
+document.getElementById('fileInput').addEventListener('change',e=>upload(e.target.files[0]));
+document.getElementById('seedBtn').onclick=seed;
+document.getElementById('prevPg').onclick=()=>renderPage(pageNum-1);
+document.getElementById('nextPg').onclick=()=>renderPage(pageNum+1);
+document.getElementById('sendBtn').onclick=()=>ask();
+refreshDocs();
+</script>
+</body>
+</html>

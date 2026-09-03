@@ -1,0 +1,36 @@
+# Environment / secrets
+.env
+.env.local
+.env*.local
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Data (never commit uploaded files or the generated index)
+backend/data/
+*.pdf
+*.png
+*.jpg
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+.vercel/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
