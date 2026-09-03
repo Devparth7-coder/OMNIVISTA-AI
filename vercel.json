@@ -1,18 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "name": "omnivista-api",
   "version": 2,
-  "name": "omnivista",
-  "comment": "Monorepo root. Deploy backend/ and frontend/ as two separate Vercel projects (omnivista-api, omnivista-web). See DEPLOYMENT.md.",
+  "regions": ["bom1"],
   "builds": [
     {
-      "src": "backend/api/index.py",
+      "src": "api/index.py",
       "use": "@vercel/python",
-      "config": { "maxDuration": 60, "memory": 1024 }
-    },
-    {
-      "src": "frontend/**",
-      "use": "@vercel/next",
-      "config": { "distDir": "frontend/.next" }
+      "config": {
+        "maxDuration": 60
+      }
     }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "api/index.py" }
   ]
 }
