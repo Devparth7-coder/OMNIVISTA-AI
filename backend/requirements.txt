@@ -1,17 +1,30 @@
 # OMNIVISTA AI backend
-fastapi==0.141.1
-uvicorn[standard]==0.35.0
-python-multipart==0.0.20
-pydantic==2.13.4
-pydantic-settings==2.10.1
-pypdf==6.16.2
-pdfplumber==0.11.10
-python-docx==1.2.0
-python-pptx==1.0.2
-reportlab==5.0.1
-matplotlib==3.10.9
-numpy==2.3.5
-pillow==12.3.0
-httpx==0.28.1
-pytest==9.0.3
-pytest-asyncio==1.1.0
+# Minimum-version ranges (not exact pins) so pip can resolve a mutually
+# compatible set on the target Python (3.11 on Render/Vercel). Adding a new
+# dep: use a lower bound, not ==, to avoid hard conflicts.
+
+# --- Web framework -----------------------------------------------------------
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.9
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+
+# --- Document parsing ---------------------------------------------------------
+pypdf>=4.0
+pdfplumber>=0.10
+python-docx>=1.0
+python-pptx>=0.6.23
+reportlab>=4.0
+
+# --- Imagery / charts ---------------------------------------------------------
+matplotlib>=3.8
+numpy>=1.26
+pillow>=10.0
+
+# --- HTTP ---------------------------------------------------------------------
+httpx>=0.27
+
+# --- Testing -------------------------------------------------------------------
+pytest>=8.2,<9          # pytest-asyncio requires pytest<9
+pytest-asyncio>=0.24,<2
